@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>LLM Gateway — Test Console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #2a2f3a;
+    --text: #e6e8ec;
+    --muted: #9aa2b1;
+    --accent: #6ea8fe;
+    --ok: #4caf7d;
+    --err: #e5636b;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.4;
+  }
+  header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  .base-url {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  section.card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  section.card[data-locked="true"] {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+  section.card h2 {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+  }
+  section.card .hint {
+    color: var(--muted);
+    font-size: 12.5px;
+    margin: 0 0 14px 0;
+  }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+  label { font-size: 12px; color: var(--muted); }
+  input, select, textarea {
+    background: #0d0f13;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 60px; font-family: var(--mono); }
+  button {
+    background: var(--accent);
+    color: #0b0e14;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-weight: 500;
+  }
+  button.danger { background: var(--err); color: #1a0e10; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .tabs button.tab {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .tabs button.tab.active { color: var(--text); border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12.5px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; }
+  code, .mono { font-family: var(--mono); }
+  .msg { font-size: 12.5px; margin-top: 10px; padding: 8px 10px; border-radius: 6px; display: none; }
+  .msg.show { display: block; }
+  .msg.ok { background: rgba(76,175,125,0.12); color: var(--ok); border: 1px solid rgba(76,175,125,0.3); }
+  .msg.err { background: rgba(229,99,107,0.12); color: var(--err); border: 1px solid rgba(229,99,107,0.3); }
+  pre {
+    background: #0d0f13;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    font-size: 12px;
+    margin-top: 10px;
+  }
+  .key-reveal {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #0d0f13;
+    border: 1px dashed var(--accent);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-top: 10px;
+  }
+  .key-reveal code { flex: 1; word-break: break-all; }
+  .status-pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+  }
+  .status-pill.active { background: rgba(76,175,125,0.15); color: var(--ok); }
+  .status-pill.revoked, .status-pill.inactive { background: rgba(229,99,107,0.15); color: var(--err); }
+  .logged-in-as { font-size: 12.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>LLM Gateway — Test Console</h1>
+    <div class="sub">Manual test UI for auth, BYOK provider keys, virtual keys, and the routed proxy.</div>
+  </div>
+  <div class="base-url">
+    <label for="apiBase" style="margin:0">API base:</label>
+    <input id="apiBase" style="width:200px" value="http://localhost:8080" />
+    <span id="authStatus" class="logged-in-as">not logged in</span>
+    <button id="logoutBtn" class="secondary" style="display:none">Log out</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- AUTH -->
+  <section class="card" id="authCard">
+    <h2>1. Auth</h2>
+    <p class="hint">Sign up once, then log in. The access token is used for all <code>/api/*</code> calls below.</p>
+    <div class="tabs">
+      <button class="tab active" data-tab="login">Log in</button>
+      <button class="tab" data-tab="signup">Sign up</button>
+    </div>
+    <form id="authForm" class="row">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="authEmail" placeholder="you@example.com" required />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="authPassword" placeholder="min 8 characters" required />
+      </div>
+      <button type="submit" id="authSubmit">Log in</button>
+    </form>
+    <div id="authMsg" class="msg"></div>
+  </section>
+
+  <!-- PROVIDER KEYS -->
+  <section class="card" id="providerCard" data-locked="true">
+    <h2>2. Provider keys (BYOK)</h2>
+    <p class="hint">Add your own provider API key. It's encrypted at rest — only a masked version is ever shown again.</p>
+    <form id="providerForm" class="row">
+      <div class="field" style="max-width:140px">
+        <label>Provider</label>
+        <select id="providerName">
+          <option value="openai">openai</option>
+          <option value="anthropic">anthropic</option>
+          <option value="gemini">gemini</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>API key</label>
+        <input id="providerApiKey" placeholder="sk-..." required />
+      </div>
+      <div class="field" style="max-width:160px">
+        <label>Label (optional)</label>
+        <input id="providerLabel" placeholder="prod" />
+      </div>
+      <button type="submit">Add key</button>
+    </form>
+    <div id="providerMsg" class="msg"></div>
+    <table id="providerTable" style="display:none">
+      <thead><tr><th>Provider</th><th>Masked key</th><th>Label</th><th>Status</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- VIRTUAL KEYS -->
+  <section class="card" id="virtualCard" data-locked="true">
+    <h2>3. Virtual keys</h2>
+    <p class="hint">Requires at least one active provider key. The raw key is shown once — copy it before it scrolls away.</p>
+    <form id="virtualForm" class="row">
+      <div class="field">
+        <label>Name (optional)</label>
+        <input id="virtualName" placeholder="my-test-app" />
+      </div>
+      <button type="submit">Issue virtual key</button>
+    </form>
+    <div id="virtualMsg" class="msg"></div>
+    <div id="virtualReveal"></div>
+    <table id="virtualTable" style="display:none">
+      <thead><tr><th>Name</th><th>Prefix</th><th>Status</th><th>Last used</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- ROUTED PROXY -->
+  <section class="card" id="proxyCard" data-locked="true">
+    <h2>4. Routed chat completion</h2>
+    <p class="hint">Calls <code>POST /v1/chat/completions</code> using a virtual key — proves the whole pipeline (auth → routing → decrypt → provider call).</p>
+    <form id="proxyForm" class="row">
+      <div class="field">
+        <label>Virtual key</label>
+        <select id="proxyVirtualKey"></select>
+      </div>
+      <div class="field" style="max-width:160px">
+        <label>Model</label>
+        <input id="proxyModel" value="gpt-4o" />
+      </div>
+    </form>
+    <div class="field" style="margin-top:10px">
+      <label>Message</label>
+      <textarea id="proxyMessage">Say hello in one short sentence.</textarea>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="proxySend">Send</button>
+    </div>
+    <div id="proxyMsg" class="msg"></div>
+    <pre id="proxyOutput" style="display:none"></pre>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const apiBaseInput = $('apiBase');
+  apiBaseInput.value = localStorage.getItem('gw_api_base') || apiBaseInput.value;
+  apiBaseInput.addEventListener('change', () => localStorage.setItem('gw_api_base', apiBaseInput.value));
+
+  const state = {
+    accessToken: null,
+    refreshToken: null,
+    email: null,
+    // raw virtual keys issued THIS session — the server never returns them again,
+    // so this in-memory list is what lets section 4 actually call the proxy.
+    issuedVirtualKeys: [], // {label, key}
+  };
+
+  function apiBase() { return apiBaseInput.value.replace(/\/$/, ''); }
+
+  async function api(path, { method = 'GET', body, auth = false, bearer } = {}) {
+    const headers = { 'content-type': 'application/json' };
+    if (auth && state.accessToken) headers['authorization'] = 'Bearer ' + state.accessToken;
+    if (bearer) headers['authorization'] = 'Bearer ' + bearer;
+    const res = await fetch(apiBase() + path, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    let data = null;
+    const text = await res.text();
+    try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+    if (!res.ok) {
+      const err = new Error((data && data.error) || res.statusText || 'request failed');
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  }
+
+  function showMsg(el, text, ok) {
+    el.textContent = text;
+    el.className = 'msg show ' + (ok ? 'ok' : 'err');
+  }
+
+  function unlock(id) { $(id).dataset.locked = 'false'; }
+  function lock(id) { $(id).dataset.locked = 'true'; }
+
+  // ---------- AUTH ----------
+  let authMode = 'login';
+  document.querySelectorAll('#authCard .tab').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      authMode = btn.dataset.tab;
+      document.querySelectorAll('#authCard .tab').forEach((b) => b.classList.toggle('active', b === btn));
+      $('authSubmit').textContent = authMode === 'login' ? 'Log in' : 'Sign up';
+    });
+  });
+
+  $('authForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('authEmail').value.trim();
+    const password = $('authPassword').value;
+    try {
+      if (authMode === 'signup') {
+        await api('/auth/signup', { method: 'POST', body: { email, password } });
+        showMsg($('authMsg'), 'Account created — now log in.', true);
+        authMode = 'login';
+        document.querySelectorAll('#authCard .tab').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'login'));
+        $('authSubmit').textContent = 'Log in';
+        return;
+      }
+      const tokens = await api('/auth/login', { method: 'POST', body: { email, password } });
+      state.accessToken = tokens.access_token;
+      state.refreshToken = tokens.refresh_token;
+      state.email = email;
+      $('authStatus').textContent = 'logged in as ' + email;
+      $('logoutBtn').style.display = 'inline-block';
+      showMsg($('authMsg'), 'Logged in.', true);
+      unlock('providerCard');
+      unlock('virtualCard');
+      await refreshProviderKeys();
+      await refreshVirtualKeys();
+    } catch (err) {
+      showMsg($('authMsg'), 'Error: ' + err.message, false);
+    }
+  });
+
+  $('logoutBtn').addEventListener('click', async () => {
+    try {
+      if (state.refreshToken) {
+        await api('/auth/logout', { method: 'POST', body: { refresh_token: state.refreshToken }, auth: true });
+      }
+    } catch (_) { /* best-effort */ }
+    state.accessToken = null;
+    state.refreshToken = null;
+    state.email = null;
+    state.issuedVirtualKeys = [];
+    $('authStatus').textContent = 'not logged in';
+    $('logoutBtn').style.display = 'none';
+    lock('providerCard');
+    lock('virtualCard');
+    lock('proxyCard');
+    $('virtualReveal').innerHTML = '';
+    $('providerTable').style.display = 'none';
+    $('virtualTable').style.display = 'none';
+  });
+
+  // ---------- PROVIDER KEYS ----------
+  async function refreshProviderKeys() {
+    const list = await api('/api/provider-keys', { auth: true });
+    const tbody = $('providerTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    let anyActive = false;
+    for (const item of list.items) {
+      if (item.is_active) anyActive = true;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.provider}</td>
+        <td class="mono">${item.masked_key}</td>
+        <td>${item.label || ''}</td>
+        <td><span class="status-pill ${item.is_active ? 'active' : 'inactive'}">${item.is_active ? 'active' : 'inactive'}</span></td>
+        <td>${item.is_active ? `<button class="secondary" data-id="${item.id}">Deactivate</button>` : ''}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+    $('providerTable').style.display = list.items.length ? 'table' : 'none';
+    tbody.querySelectorAll('button[data-id]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await api('/api/provider-keys/' + btn.dataset.id, { method: 'DELETE', auth: true });
+          await refreshProviderKeys();
+        } catch (err) {
+          showMsg($('providerMsg'), 'Error: ' + err.message, false);
+        }
+      });
+    });
+    return anyActive;
+  }
+
+  $('providerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await api('/api/provider-keys', {
+        method: 'POST',
+        auth: true,
+        body: {
+          provider: $('providerName').value,
+          api_key: $('providerApiKey').value,
+          label: $('providerLabel').value || null,
+        },
+      });
+      $('providerApiKey').value = '';
+      $('providerLabel').value = '';
+      showMsg($('providerMsg'), 'Provider key added.', true);
+      await refreshProviderKeys();
+      unlock('virtualCard');
+    } catch (err) {
+      showMsg($('providerMsg'), 'Error: ' + err.message, false);
+    }
+  });
+
+  // ---------- VIRTUAL KEYS ----------
+  async function refreshVirtualKeys() {
+    const list = await api('/api/virtual-keys', { auth: true });
+    const tbody = $('virtualTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    for (const item of list.items) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${item.name || ''}</td>
+        <td class="mono">${item.prefix}</td>
+        <td><span class="status-pill ${item.status}">${item.status}</span></td>
+        <td>${item.last_used_at || 'never'}</td>
+        <td>${item.status === 'active' ? `<button class="secondary" data-id="${item.id}">Revoke</button>` : ''}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+    $('virtualTable').style.display = list.items.length ? 'table' : 'none';
+    tbody.querySelectorAll('button[data-id]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await api('/api/virtual-keys/' + btn.dataset.id, { method: 'DELETE', auth: true });
+          await refreshVirtualKeys();
+          refreshProxyKeyOptions();
+        } catch (err) {
+          showMsg($('virtualMsg'), 'Error: ' + err.message, false);
+        }
+      });
+    });
+  }
+
+  function refreshProxyKeyOptions() {
+    const select = $('proxyVirtualKey');
+    select.innerHTML = '';
+    if (!state.issuedVirtualKeys.length) {
+      select.innerHTML = '<option value="">(issue a virtual key above first)</option>';
+      lock('proxyCard');
+      return;
+    }
+    for (const { label, key } of state.issuedVirtualKeys) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = label;
+      select.appendChild(opt);
+    }
+    unlock('proxyCard');
+  }
+
+  $('virtualForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const result = await api('/api/virtual-keys', {
+        method: 'POST',
+        auth: true,
+        body: { name: $('virtualName').value || null },
+      });
+      $('virtualName').value = '';
+      showMsg($('virtualMsg'), 'Virtual key issued — copy it now, it will not be shown again.', true);
+      $('virtualReveal').innerHTML = `
+        <div class="key-reveal">
+          <code>${result.key}</code>
+          <button class="secondary" id="copyKeyBtn">Copy</button>
+        </div>`;
+      $('copyKeyBtn').addEventListener('click', () => {
+        navigator.clipboard.writeText(result.key);
+        $('copyKeyBtn').textContent = 'Copied!';
+        setTimeout(() => ($('copyKeyBtn').textContent = 'Copy'), 1200);
+      });
+      state.issuedVirtualKeys.push({ label: (result.name || result.prefix), key: result.key });
+      refreshProxyKeyOptions();
+      await refreshVirtualKeys();
+    } catch (err) {
+      showMsg($('virtualMsg'), 'Error: ' + err.message, false);
+    }
+  });
+
+  // ---------- ROUTED PROXY ----------
+  $('proxySend').addEventListener('click', async () => {
+    const vk = $('proxyVirtualKey').value;
+    if (!vk) return;
+    $('proxyOutput').style.display = 'none';
+    try {
+      const result = await api('/v1/chat/completions', {
+        method: 'POST',
+        bearer: vk,
+        body: {
+          model: $('proxyModel').value,
+          messages: [{ role: 'user', content: $('proxyMessage').value }],
+        },
+      });
+      showMsg($('proxyMsg'), 'Success — see raw response below.', true);
+      $('proxyOutput').style.display = 'block';
+      $('proxyOutput').textContent = JSON.stringify(result, null, 2);
+    } catch (err) {
+      showMsg($('proxyMsg'), `Error (${err.status || '?'}): ${err.message}`, false);
+      if (err.data) {
+        $('proxyOutput').style.display = 'block';
+        $('proxyOutput').textContent = JSON.stringify(err.data, null, 2);
+      }
+    }
+  });
+
+  refreshProxyKeyOptions();
+})();
+</script>
+
+</body>
+</html>
