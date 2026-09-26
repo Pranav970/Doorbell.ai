@@ -1,0 +1,25 @@
+# Ownership boundaries mirror the crate map in CLAUDE.md. Only one
+# contributor exists in git history today (@vedant) — replace the
+# placeholder handles/teams below once there's more than one.
+#
+# TODO(vedant): replace @owner-placeholder with real GitHub usernames/teams.
+
+*                               @owner-placeholder
+
+/crates/gateway-config/        @owner-placeholder
+/crates/gateway-telemetry/     @owner-placeholder
+/crates/gateway-common/        @owner-placeholder
+/crates/gateway-db/            @owner-placeholder
+/crates/gateway-crypto/        @owner-placeholder
+/crates/gateway-auth/          @owner-placeholder
+/crates/gateway-providers/     @owner-placeholder
+/crates/gateway-core/          @owner-placeholder
+/crates/gateway-api/           @owner-placeholder
+
+/migrations/                   @owner-placeholder
+/frontend/                     @owner-placeholder
+
+/Dockerfile                    @owner-placeholder
+/docker-compose.yml            @owner-placeholder
+/.github/                      @owner-placeholder
+/deny.toml                     @owner-placeholder
