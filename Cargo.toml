@@ -1,0 +1,79 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/gateway-common",
+    "crates/gateway-config",
+    "crates/gateway-telemetry",
+    "crates/gateway-db",
+    "crates/gateway-crypto",
+    "crates/gateway-auth",
+    "crates/gateway-providers",
+    "crates/gateway-core",
+    "crates/gateway-api",
+    "crates/gateway-testkit",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "UNLICENSED"
+publish = false
+
+[workspace.dependencies]
+gateway-common = { path = "crates/gateway-common" }
+gateway-config = { path = "crates/gateway-config" }
+gateway-telemetry = { path = "crates/gateway-telemetry" }
+gateway-db = { path = "crates/gateway-db" }
+gateway-crypto = { path = "crates/gateway-crypto" }
+gateway-auth = { path = "crates/gateway-auth" }
+gateway-providers = { path = "crates/gateway-providers" }
+gateway-core = { path = "crates/gateway-core" }
+gateway-testkit = { path = "crates/gateway-testkit" }
+
+tokio = { version = "1", features = ["full"] }
+axum = { version = "0.7", features = ["json"] }
+tower = { version = "0.4", features = ["util"] }
+tower-http = { version = "0.5", features = ["trace", "request-id", "cors", "limit", "util"] }
+http = "1"
+http-body-util = "0.1"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+anyhow = "1"
+
+config = "0.14"
+dotenvy = "0.15"
+
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+metrics = "0.23"
+metrics-exporter-prometheus = "0.15"
+
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "migrate", "macros"] }
+
+jsonwebtoken = "9"
+argon2 = "0.5"
+aes-gcm = "0.10"
+rand = "0.8"
+base64 = "0.22"
+zeroize = "1"
+sha2 = "0.10"
+secrecy = { version = "0.8", features = ["serde"] }
+
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
+async-trait = "0.1"
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+bytes = "1"
+
+utoipa = { version = "4", features = ["axum_extras", "uuid", "chrono"] }
+utoipa-swagger-ui = { version = "6", features = ["axum"] }
+
+wiremock = "0.6"
+insta = { version = "1", features = ["json", "redactions"] }
+
+[profile.release]
+strip = true
