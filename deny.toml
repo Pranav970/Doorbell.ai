@@ -1,0 +1,41 @@
+[graph]
+targets = []
+
+[advisories]
+db-path = "~/.cargo/advisory-db"
+db-urls = ["https://github.com/rustsec/advisory-db"]
+yanked = "deny"
+ignore = [
+    # proc-macro-error, pulled in transitively via utoipa-gen -> utoipa.
+    # Unmaintained, not a vulnerability; no fixed upstream release to move to.
+    "RUSTSEC-2024-0370",
+]
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "CC0-1.0",
+    "CDLA-Permissive-2.0",
+]
+confidence-threshold = 0.8
+
+# Workspace crates are all `publish = false` (see CLAUDE.md's crate map) —
+# they'll never actually be published, so `license = "UNLICENSED"` (not a
+# real SPDX id) shouldn't be held to the same license policy as real deps.
+[licenses.private]
+ignore = true
+
+[bans]
+multiple-versions = "warn"
+wildcards = "allow"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
