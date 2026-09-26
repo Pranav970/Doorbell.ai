@@ -1,0 +1,1 @@
+ALTER TABLE request_logs ADD COLUMN fallback_count INTEGER NOT NULL DEFAULT 0;

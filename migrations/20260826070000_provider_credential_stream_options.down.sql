@@ -1,0 +1,1 @@
+ALTER TABLE provider_credentials DROP COLUMN supports_stream_options;
