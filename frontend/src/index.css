@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Dual-tone design system: black + blue, nothing else.
+ *
+ * Only the *neutrals* are tokenised — they're the half that flips between
+ * light and dark. The blue accent is identical in both themes, so accents
+ * stay plain `bg-blue-600` / `text-blue-400` / `hover:bg-blue-500` at the
+ * call site rather than hiding behind another name.
+ *
+ * ponytail: semantic neutral tokens instead of a `dark:` twin on every
+ * element — one class per element, one file to repalette. Values below are
+ * verbatim Tailwind zinc, so `bg-surface` in dark mode really is zinc-900.
+ */
+@theme {
+  --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #fafafa; /* app background */
+  --color-surface: #ffffff; /* cards, sidebar */
+  --color-raised: #f4f4f5; /* inset panels inside a card */
+  --color-line: #e4e4e7; /* borders, dividers */
+  --color-fg: #18181b; /* primary text */
+  --color-muted: #71717a; /* secondary text */
+}
+
+.dark {
+  --color-ink: #000000; /* black */
+  --color-surface: #18181b; /* zinc-900 */
+  --color-raised: #09090b; /* zinc-950 */
+  --color-line: #27272a; /* zinc-800 */
+  --color-fg: #f4f4f5; /* zinc-100 */
+  --color-muted: #a1a1aa; /* zinc-400 */
+}
+
+/*
+ * Scoped (not `light dark`) so canvastext/form-control defaults follow the
+ * app's .dark class toggle instead of the OS preference — with `light dark`
+ * here, toggling in-app theme while the OS sits in the other mode left
+ * unstyled text using the OS-driven color against the app's own background.
+ */
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    background-color: var(--color-ink);
+    color: var(--color-fg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-blue-500) 35%, transparent);
+  }
+
+  /* Thin blue-on-black scrollbars so overflow areas stay on-palette. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+
+  input[type='radio'],
+  input[type='checkbox'] {
+    accent-color: var(--color-blue-600);
+  }
+}
