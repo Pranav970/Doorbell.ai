@@ -1,0 +1,35 @@
+[package]
+name = "gateway-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+gateway-common = { workspace = true }
+gateway-config = { workspace = true }
+gateway-db = { workspace = true }
+gateway-crypto = { workspace = true }
+gateway-providers = { workspace = true }
+tower = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+http = { workspace = true }
+sha2 = { workspace = true }
+base64 = { workspace = true }
+tokio = { workspace = true }
+futures-util = { workspace = true }
+secrecy = { workspace = true }
+
+[dev-dependencies]
+sqlx = { workspace = true }
+wiremock = { workspace = true }
+secrecy = { workspace = true }
+serde_json = { workspace = true }
+base64 = { workspace = true }
+gateway-testkit = { workspace = true }
